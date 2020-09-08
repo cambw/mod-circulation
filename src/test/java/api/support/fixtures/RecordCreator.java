@@ -16,10 +16,7 @@ class RecordCreator {
   private final Function<JsonObject, String> identityMapKey;
   private final Map<String, IndividualResource> identityMap = new HashMap<>();
 
-  RecordCreator(
-    ResourceClient client,
-    Function<JsonObject, String> identityMapKey) {
-
+  RecordCreator(ResourceClient client, Function<JsonObject, String> identityMapKey) {
     this.client = client;
     this.identityMapKey = identityMapKey;
   }
@@ -38,12 +35,10 @@ class RecordCreator {
   }
 
   IndividualResource createIfAbsent(Builder recordBuilder) {
-
     return createIfAbsent(recordBuilder.create());
   }
 
   IndividualResource createIfAbsent(JsonObject record) {
-
     return createIfAbsent(identityMapKey.apply(record), record);
   }
 
