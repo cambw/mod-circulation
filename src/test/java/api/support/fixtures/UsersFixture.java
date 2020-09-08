@@ -17,6 +17,7 @@ import org.folio.circulation.support.http.client.IndividualResource;
 import api.support.APITestContext;
 import api.support.builders.UserBuilder;
 import api.support.http.ResourceClient;
+import api.support.resources.UserResource;
 
 public class UsersFixture {
   private final RecordCreator userRecordCreator;
@@ -29,73 +30,62 @@ public class UsersFixture {
     this.patronGroupsFixture = patronGroupsFixture;
   }
 
-  public void cleanUp() {
-    userRecordCreator.cleanUp();
-  }
-
-  public IndividualResource jessica() {
+  public UserResource jessica() {
     return createUser(basedUponJessicaPontefract()
         .inGroupFor(patronGroupsFixture.regular()));
   }
 
-  public IndividualResource james() {
+  public UserResource james() {
     return createUser(basedUponJamesRodwell()
       .inGroupFor(patronGroupsFixture.regular()));
   }
 
-  public IndividualResource rebecca() {
+  public UserResource rebecca() {
     return rebecca(identity());
   }
 
-  public IndividualResource rebecca(Function<UserBuilder, UserBuilder> additionalProperties) {
+  public UserResource rebecca(Function<UserBuilder, UserBuilder> additionalProperties) {
     return createUser(additionalProperties.apply(basedUponRebeccaStuart()
       .inGroupFor(patronGroupsFixture.regular())));
   }
 
-  public IndividualResource steve() {
+  public UserResource steve() {
     return steve(identity());
   }
 
-  public IndividualResource steve(Function<UserBuilder, UserBuilder> additionalUserProperties) {
-    return userRecordCreator.createIfAbsent(
-      additionalUserProperties.apply(basedUponStevenJones()
-        .inGroupFor(patronGroupsFixture.regular())));
+  public UserResource steve(Function<UserBuilder, UserBuilder> additionalUserProperties) {
+    return createUser(additionalUserProperties.apply(basedUponStevenJones()
+      .inGroupFor(patronGroupsFixture.regular())));
   }
 
-  public IndividualResource charlotte() {
+  public UserResource charlotte() {
     return charlotte(identity());
   }
 
-  public IndividualResource charlotte(Function<UserBuilder, UserBuilder> additionalConfiguration) {
-    return userRecordCreator.createIfAbsent(
-      additionalConfiguration.apply(basedUponCharlotteBroadwell()
-        .inGroupFor(patronGroupsFixture.regular())));
+  public UserResource charlotte(Function<UserBuilder, UserBuilder> additionalConfiguration) {
+    return createUser(additionalConfiguration.apply(basedUponCharlotteBroadwell()
+      .inGroupFor(patronGroupsFixture.regular())));
   }
 
-  public IndividualResource undergradHenry() {
+  public UserResource undergradHenry() {
     return undergradHenry(identity());
   }
 
-  public IndividualResource undergradHenry(
-    Function<UserBuilder, UserBuilder> additionalConfiguration) {
-
-    return userRecordCreator.createIfAbsent(
-      additionalConfiguration.apply(basedUponHenryHanks()
-        .inGroupFor(patronGroupsFixture.undergrad())));
+  public UserResource undergradHenry(Function<UserBuilder, UserBuilder> additionalConfiguration) {
+    return createUser(additionalConfiguration.apply(basedUponHenryHanks()
+      .inGroupFor(patronGroupsFixture.undergrad())));
   }
 
-  public IndividualResource noUserGroupBob() {
+  public UserResource noUserGroupBob() {
     return noUserGroupBob(identity());
   }
 
-  public IndividualResource noUserGroupBob(
-    Function<UserBuilder, UserBuilder> additionalConfiguration) {
-
+  public UserResource noUserGroupBob(Function<UserBuilder, UserBuilder> additionalConfiguration) {
     return createUser(additionalConfiguration.apply(basedUponBobbyBibbin()));
   }
 
-  private IndividualResource createUser(UserBuilder builder) {
-    return userRecordCreator.createIfAbsent(builder);
+  public void cleanUp() {
+    userRecordCreator.cleanUp();
   }
 
   public void remove(IndividualResource user) {
@@ -103,9 +93,13 @@ public class UsersFixture {
   }
 
   public void defaultAdmin() {
-    userRecordCreator.createIfAbsent(new UserBuilder()
+    createUser(new UserBuilder()
       .withName("Admin", "Admin")
       .withNoBarcode()
       .withId(APITestContext.getUserId()));
+  }
+
+  private UserResource createUser(UserBuilder builder) {
+    return new UserResource(userRecordCreator.createIfAbsent(builder));
   }
 }
