@@ -34,12 +34,12 @@ public class UsersFixture {
   }
 
   public IndividualResource jessica() {
-    return userRecordCreator.createIfAbsent(basedUponJessicaPontefract()
+    return createUser(basedUponJessicaPontefract()
         .inGroupFor(patronGroupsFixture.regular()));
   }
 
   public IndividualResource james() {
-    return userRecordCreator.createIfAbsent(basedUponJamesRodwell()
+    return createUser(basedUponJamesRodwell()
       .inGroupFor(patronGroupsFixture.regular()));
   }
 
@@ -48,9 +48,8 @@ public class UsersFixture {
   }
 
   public IndividualResource rebecca(Function<UserBuilder, UserBuilder> additionalProperties) {
-    return userRecordCreator.createIfAbsent(
-      additionalProperties.apply(basedUponRebeccaStuart()
-        .inGroupFor(patronGroupsFixture.regular())));
+    return createUser(additionalProperties.apply(basedUponRebeccaStuart()
+      .inGroupFor(patronGroupsFixture.regular())));
   }
 
   public IndividualResource steve() {
@@ -92,8 +91,11 @@ public class UsersFixture {
   public IndividualResource noUserGroupBob(
     Function<UserBuilder, UserBuilder> additionalConfiguration) {
 
-    return userRecordCreator.createIfAbsent(
-      additionalConfiguration.apply(basedUponBobbyBibbin()));
+    return createUser(additionalConfiguration.apply(basedUponBobbyBibbin()));
+  }
+
+  private IndividualResource createUser(UserBuilder builder) {
+    return userRecordCreator.createIfAbsent(builder);
   }
 
   public void remove(IndividualResource user) {
