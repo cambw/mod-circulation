@@ -139,16 +139,12 @@ public abstract class AbstractCirculationRulesEngineResource extends Resource {
         invalidUuid(request, LOCATION_ID_NAME);
   }
 
-  public static void setCacheTime(long triggerAgeInMilliseconds, long maxAgeInMilliseconds) {
-    CirculationRulesCache.setCacheTime(triggerAgeInMilliseconds, maxAgeInMilliseconds);
-  }
-
   public static void dropCache() {
-    CirculationRulesCache.dropCache();
+    CirculationRulesCache.getInstance().dropCache();
   }
 
   static void clearCache(String tenantId) {
-    CirculationRulesCache.clearCache(tenantId);
+    CirculationRulesCache.getInstance().clearCache(tenantId);
   }
 
   protected abstract String getPolicyIdKey();

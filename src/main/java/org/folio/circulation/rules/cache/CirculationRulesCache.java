@@ -1,12 +1,10 @@
 package org.folio.circulation.rules.cache;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.folio.circulation.support.results.Result.ofAsync;
-import static org.folio.circulation.support.results.Result.succeeded;
 import static org.slf4j.LoggerFactory.getLogger;
 
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.folio.circulation.rules.Drools;
 import org.folio.circulation.rules.Text2Drools;
@@ -14,43 +12,34 @@ import org.folio.circulation.support.CollectionResourceClient;
 import org.folio.circulation.support.results.Result;
 import org.slf4j.Logger;
 
+import com.github.benmanes.caffeine.cache.AsyncCache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+
 import io.vertx.core.json.JsonObject;
 
 public final class CirculationRulesCache {
   private static final Logger log = getLogger(CirculationRulesCache.class);
   private static final CirculationRulesCache instance = new CirculationRulesCache();
   /** after this time the rules get loaded before executing the circulation rules engine */
-  private static volatile long maxAgeInMilliseconds = 5000;
-  /** after this time the circulation rules engine is executed first for a fast reply
-   * and then the circulation rules get reloaded */
-  private static volatile long triggerAgeInMilliseconds = 4000;
-  /** rules and Drools for each tenantId */
-  private static final Map<String, Rules> rulesMap = new ConcurrentHashMap<>();
+  private static final long MAX_AGE_IN_MILLISECONDS = 5000;
+  private final AsyncCache<String, Result<Rules>> rulesCache;
 
   public static CirculationRulesCache getInstance() {
     return instance;
   }
 
-  private CirculationRulesCache() {}
-
-  /**
-   * Set the cache time.
-   *
-   * @param triggerAgeInMs after this time the circulation rules engine is executed first for a fast reply
-   *                       and then the circulation rules get reloaded
-   * @param maxAgeInMs     after this time the rules get loaded before executing the circulation rules engine
-   */
-  public static void setCacheTime(long triggerAgeInMs, long maxAgeInMs) {
-    triggerAgeInMilliseconds = triggerAgeInMs;
-    maxAgeInMilliseconds = maxAgeInMs;
+  private CirculationRulesCache() {
+    rulesCache = Caffeine.newBuilder()
+      .expireAfterWrite(MAX_AGE_IN_MILLISECONDS, MILLISECONDS)
+      .buildAsync();
   }
 
   /**
    * Completely drop the cache. This enforces rebuilding the drools rules
    * even when the circulation rules haven't changed.
    */
-  public static void dropCache() {
-    rulesMap.clear();
+  public void dropCache() {
+    rulesCache.synchronous().cleanUp();
   }
 
   /**
@@ -58,43 +47,18 @@ public final class CirculationRulesCache {
    * This doesn't rebuild the drools rules if the circulation rules haven't changed.
    * @param tenantId  id of the tenant
    */
-  public static void clearCache(String tenantId) {
-    Rules rules = rulesMap.get(tenantId);
-    if (rules == null) {
-      return;
-    }
-    rules.reloadTimestamp = 0;
+  public void clearCache(String tenantId) {
+    rulesCache.synchronous().invalidate(tenantId);
   }
 
-  private boolean isCurrent(Rules rules) {
-    if (rules == null) {
-      return false;
-    }
-    return rules.reloadTimestamp + maxAgeInMilliseconds > System.currentTimeMillis();
-  }
-
-  /**
-   * Reload is needed if the last reload is TRIGGER_AGE_IN_MILLISECONDS old
-   * and a reload hasn't been initiated yet.
-   * @param rules - rules to reload
-   * @return whether reload is needed
-   */
-  private boolean reloadNeeded(Rules rules) {
-    if (rules.reloadInitiated) {
-      return false;
-    }
-    return rules.reloadTimestamp + triggerAgeInMilliseconds < System.currentTimeMillis();
-  }
-
-  private CompletableFuture<Result<Rules>> reloadRules(Rules rules,
+  private CompletableFuture<Result<Rules>> loadRules(
     CollectionResourceClient circulationRulesClient) {
 
     return circulationRulesClient.get()
       .thenCompose(r -> r.after(response -> {
-        JsonObject circulationRules = new JsonObject(response.getBody());
+        Rules rules = new Rules();
 
-        rules.reloadTimestamp = System.currentTimeMillis();
-        rules.reloadInitiated = false;
+        JsonObject circulationRules = new JsonObject(response.getBody());
 
         if (log.isDebugEnabled()) {
           log.debug("circulationRules = {}", circulationRules.encodePrettily());
@@ -106,12 +70,8 @@ public final class CirculationRulesCache {
           throw new NullPointerException("rulesAsText");
         }
 
-        if (rules.rulesAsText.equals(rulesAsText)) {
-          return ofAsync(() -> rules);
-        }
-
         rules.rulesAsText = rulesAsText;
-        rules.rulesAsDrools = Text2Drools.convert(rulesAsText);
+        rules.rulesAsDrools = Text2Drools.convert(rules.rulesAsText);
         log.debug("rulesAsDrools = {}", rules.rulesAsDrools);
         rules.drools = new Drools(rules.rulesAsDrools);
 
@@ -122,27 +82,7 @@ public final class CirculationRulesCache {
   public CompletableFuture<Result<Drools>> getDrools(String tenantId,
     CollectionResourceClient circulationRulesClient) {
 
-    final CompletableFuture<Result<Drools>> cfDrools = new CompletableFuture<>();
-    Rules rules = rulesMap.get(tenantId);
-
-    if (isCurrent(rules)) {
-      cfDrools.complete(succeeded(rules.drools));
-
-      if (reloadNeeded(rules)) {
-        rules.reloadInitiated = true;
-        reloadRules(rules, circulationRulesClient)
-          .thenCompose(r -> r.after(updatedRules -> ofAsync(() -> updatedRules.drools)));
-      }
-
-      return cfDrools;
-    }
-
-    if (rules == null) {
-      rules = new Rules();
-      rulesMap.put(tenantId, rules);
-    }
-
-    return reloadRules(rules, circulationRulesClient)
+    return rulesCache.get(tenantId, (t, e) -> loadRules(circulationRulesClient))
       .thenCompose(r -> r.after(updatedRules -> ofAsync(() -> updatedRules.drools)));
   }
 
@@ -150,8 +90,5 @@ public final class CirculationRulesCache {
     private volatile String rulesAsText = "";
     private volatile String rulesAsDrools = "";
     private volatile Drools drools;
-    /** System.currentTimeMillis() of the last load/reload of the rules from the storage */
-    private volatile long reloadTimestamp;
-    private volatile boolean reloadInitiated = false;
   }
 }
