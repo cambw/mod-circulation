@@ -1,7 +1,7 @@
 package org.folio.circulation.support.utils;
 
-
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Objects;
@@ -10,7 +10,6 @@ import java.util.stream.Stream;
 import org.joda.time.DateTime;
 
 public class DateTimeUtil {
-
   private DateTimeUtil() {
     throw new UnsupportedOperationException("Do not instantiate");
   }
@@ -36,5 +35,21 @@ public class DateTimeUtil {
       .filter(Objects::nonNull)
       .max(DateTime::compareTo)
       .orElse(null);
+  }
+
+  public static LocalDate jodaToJavaLocalDate(org.joda.time.LocalDate date) {
+    if (date == null) {
+      return null;
+    }
+
+    return LocalDate.of(date.year().get(), date.monthOfYear().get(), date.dayOfMonth().get());
+  }
+
+  public static org.joda.time.LocalDate javaToJodaLocalDate(LocalDate date) {
+    if (date == null) {
+      return null;
+    }
+
+    return new org.joda.time.LocalDate(date.getYear(), date.getMonthValue(), date.getDayOfMonth());
   }
 }

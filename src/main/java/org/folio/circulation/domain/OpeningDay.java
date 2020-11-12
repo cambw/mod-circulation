@@ -5,16 +5,18 @@ import static org.folio.circulation.support.json.JsonObjectArrayPropertyFetcher.
 import static org.folio.circulation.support.json.JsonPropertyFetcher.getBooleanProperty;
 import static org.folio.circulation.support.json.JsonPropertyFetcher.getJodaLocalDateProperty;
 import static org.folio.circulation.support.json.JsonPropertyWriter.write;
+import static org.folio.circulation.support.utils.DateTimeUtil.javaToJodaLocalDate;
+import static org.folio.circulation.support.utils.DateTimeUtil.jodaToJavaLocalDate;
 import static org.joda.time.DateTimeZone.UTC;
 import static org.joda.time.LocalTime.MIDNIGHT;
 
+import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collector;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
-import org.joda.time.LocalDate;
 
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -31,7 +33,7 @@ public class OpeningDay {
   private static final String OPENING_DAY_KEY = "openingDay";
 
   private final List<OpeningHour> openingHour;
-  private final LocalDate date;
+  private final java.time.LocalDate date;
   private final boolean allDay;
   private final boolean open;
   private final DateTime dayWithTimeZone;
@@ -56,16 +58,22 @@ public class OpeningDay {
       getBooleanProperty(openingDayJson, OPEN_KEY), zone);
   }
 
-  public static OpeningDay createOpeningDay(List<OpeningHour> openingHour, LocalDate date,
-    boolean allDay, boolean open) {
+  public static OpeningDay createOpeningDay(List<OpeningHour> openingHour,
+    org.joda.time.LocalDate date, boolean allDay, boolean open) {
 
     return new OpeningDay(openingHour, date, allDay, open, null);
   }
 
   public static OpeningDay createOpeningDay(List<OpeningHour> openingHour,
-    LocalDate date, boolean allDay, boolean open, DateTimeZone zone) {
+    org.joda.time.LocalDate date, boolean allDay, boolean open, DateTimeZone zone) {
 
     return new OpeningDay(openingHour, date, allDay, open, date.toDateTime(MIDNIGHT, zone));
+  }
+
+  public OpeningDay(List<OpeningHour> openingHour, org.joda.time.LocalDate date,
+    boolean allDay, boolean open, DateTime dateWithTimeZone) {
+
+    this(openingHour, jodaToJavaLocalDate(date), allDay, open, dateWithTimeZone);
   }
 
   public OpeningDay(List<OpeningHour> openingHour, LocalDate date,
@@ -78,8 +86,8 @@ public class OpeningDay {
     this.dayWithTimeZone = dateWithTimeZone;
   }
 
-  public LocalDate getDate() {
-    return date;
+  public org.joda.time.LocalDate getDate() {
+    return javaToJodaLocalDate(date);
   }
 
   public DateTime getDayWithTimeZone() {
@@ -107,7 +115,7 @@ public class OpeningDay {
   public JsonObject toJson() {
     final var json = new JsonObject();
 
-    write(json, DATE_KEY, date.toDateTime(MIDNIGHT, UTC));
+    write(json, DATE_KEY, javaToJodaLocalDate(date).toDateTime(MIDNIGHT, UTC));
     write(json, ALL_DAY_KEY, allDay);
     write(json, OPEN_KEY, open);
     write(json, OPENING_HOUR_KEY, openingHourToJsonArray());
