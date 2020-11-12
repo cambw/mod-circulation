@@ -1,5 +1,14 @@
 package org.folio.circulation.domain.policy.library;
 
+import static java.util.Collections.emptyList;
+import static java.util.Collections.singletonList;
+import static java.util.stream.Collectors.toList;
+import static org.folio.circulation.support.utils.DateTimeUtil.javaToJodaDateTime;
+
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
+
 import org.folio.circulation.AdjacentOpeningDays;
 import org.folio.circulation.domain.OpeningDay;
 import org.folio.circulation.domain.OpeningHour;
@@ -8,16 +17,8 @@ import org.joda.time.DateTimeZone;
 import org.joda.time.Interval;
 import org.joda.time.LocalTime;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.stream.Collectors;
-
 public class LibraryTimetableConverter {
-
-  private LibraryTimetableConverter() {
-  }
+  private LibraryTimetableConverter() { }
 
   public static LibraryTimetable convertToLibraryTimetable(
     AdjacentOpeningDays adjacentOpeningDays, DateTimeZone zone) {
@@ -32,7 +33,7 @@ public class LibraryTimetableConverter {
     List<Interval> openIntervals =
       openingDays.stream()
         .flatMap(day -> getOpenIntervalsForDay(day, zone).stream())
-        .collect(Collectors.toList());
+        .collect(toList());
 
     return mergeOpenPeriods(openIntervals);
   }
@@ -82,30 +83,30 @@ public class LibraryTimetableConverter {
 
   private static List<Interval> getOpenIntervalsForDay(OpeningDay day, DateTimeZone zone) {
     if (!day.getOpen()) {
-      return Collections.emptyList();
+      return emptyList();
     }
     if (day.getAllDay()) {
-      return Collections.singletonList(buildAllDayOpenInterval(day, zone));
+      return singletonList(buildAllDayOpenInterval(day, zone));
     }
     return day.getOpeningHour().stream()
       .map(hour -> buildIntervalFromOpeningHour(day, hour, zone))
-      .collect(Collectors.toList());
+      .collect(toList());
   }
 
-  private static Interval buildAllDayOpenInterval(
-    OpeningDay day, DateTimeZone zone) {
-    DateTime startDateTime =
-      day.getDate().toDateTime(LocalTime.MIDNIGHT, zone);
+  private static Interval buildAllDayOpenInterval(OpeningDay day, DateTimeZone zone) {
+    DateTime startDateTime = javaToJodaDateTime(day.getJavaDate(), LocalTime.MIDNIGHT, zone);
+
     DateTime endDateTime = startDateTime.plusDays(1);
+
     return new Interval(startDateTime, endDateTime);
   }
 
-  private static Interval buildIntervalFromOpeningHour(
-    OpeningDay day, OpeningHour hour, DateTimeZone zone) {
-    DateTime startDateTime =
-      day.getDate().toDateTime(hour.getStartTime(), zone);
-    DateTime endDateTime =
-      day.getDate().toDateTime(hour.getEndTime(), zone);
+  private static Interval buildIntervalFromOpeningHour(OpeningDay day, OpeningHour hour,
+    DateTimeZone zone) {
+
+    DateTime startDateTime = javaToJodaDateTime(day.getJavaDate(), hour.getStartTime(), zone);
+    DateTime endDateTime = javaToJodaDateTime(day.getJavaDate(), hour.getEndTime(), zone);
+
     return new Interval(startDateTime, endDateTime);
   }
 
