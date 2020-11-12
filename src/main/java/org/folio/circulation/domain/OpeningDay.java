@@ -90,6 +90,10 @@ public class OpeningDay {
     return javaToJodaLocalDate(date);
   }
 
+  public LocalDate getJavaDate() {
+    return date;
+  }
+
   public DateTime getDayWithTimeZone() {
     return dayWithTimeZone;
   }

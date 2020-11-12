@@ -8,6 +8,8 @@ import java.util.Objects;
 import java.util.stream.Stream;
 
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
+import org.joda.time.LocalTime;
 
 public class DateTimeUtil {
   private DateTimeUtil() {
@@ -51,5 +53,19 @@ public class DateTimeUtil {
     }
 
     return new org.joda.time.LocalDate(date.getYear(), date.getMonthValue(), date.getDayOfMonth());
+  }
+
+  public static org.joda.time.DateTime javaToJodaDateTime(LocalDate date, LocalTime time,
+    DateTimeZone zone) {
+
+    if (date == null) {
+      return null;
+    }
+
+    return javaToJodaLocalDate(date).toDateTime(time, zone);
+  }
+
+  public static org.joda.time.LocalTime endOfDay() {
+    return new LocalTime(23, 59, 59);
   }
 }
