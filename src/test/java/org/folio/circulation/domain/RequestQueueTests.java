@@ -1,16 +1,17 @@
 package org.folio.circulation.domain;
 
-import api.support.builders.RequestBuilder;
-import org.junit.Test;
-
-import java.util.UUID;
-
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsEmptyCollection.empty;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
-import static org.hamcrest.MatcherAssert.assertThat;
+
+import java.util.UUID;
+
+import org.junit.Test;
+
+import api.support.builders.RequestBuilder;
 
 public class RequestQueueTests {
 
@@ -20,7 +21,7 @@ public class RequestQueueTests {
 
     Request onlyRequest = requestAtPosition(itemId, 1);
 
-    final RequestQueue requestQueue = new RequestQueue(asList(onlyRequest));
+    final var requestQueue = new RequestQueue(asList(onlyRequest));
 
     requestQueue.remove(onlyRequest);
 
@@ -44,7 +45,7 @@ public class RequestQueueTests {
     Request secondRequest = requestAtPosition(itemId, 2);
     Request thirdRequest = requestAtPosition(itemId, 3);
 
-    final RequestQueue requestQueue = new RequestQueue(
+    final var requestQueue = new RequestQueue(
       asList(firstRequest, secondRequest, thirdRequest));
 
     requestQueue.remove(thirdRequest);
@@ -82,7 +83,7 @@ public class RequestQueueTests {
     Request secondRequest = requestAtPosition(itemId, 2);
     Request thirdRequest = requestAtPosition(itemId, 3);
 
-    final RequestQueue requestQueue = new RequestQueue(
+    final var requestQueue = new RequestQueue(
       asList(firstRequest, secondRequest, thirdRequest));
 
     requestQueue.remove(firstRequest);
@@ -121,7 +122,7 @@ public class RequestQueueTests {
     Request thirdRequest = requestAtPosition(itemId, 3);
     Request fourthRequest = requestAtPosition(itemId, 4);
 
-    final RequestQueue requestQueue = new RequestQueue(
+    final var requestQueue = new RequestQueue(
       asList(firstRequest, secondRequest, thirdRequest, fourthRequest));
 
     requestQueue.remove(secondRequest);

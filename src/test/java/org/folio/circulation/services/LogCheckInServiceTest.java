@@ -1,22 +1,21 @@
 package org.folio.circulation.services;
 
+import static org.folio.circulation.domain.RequestQueue.emptyQueue;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
-import java.util.Collections;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 import org.folio.circulation.domain.CheckInContext;
 import org.folio.circulation.domain.Item;
-import org.folio.circulation.domain.RequestQueue;
 import org.folio.circulation.domain.representations.CheckInByBarcodeRequest;
 import org.folio.circulation.support.Clients;
 import org.folio.circulation.support.CollectionResourceClient;
-import org.folio.circulation.support.results.Result;
 import org.folio.circulation.support.ServerErrorFailure;
+import org.folio.circulation.support.results.Result;
 import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
@@ -72,7 +71,7 @@ public class LogCheckInServiceTest {
     return new CheckInContext(
       CheckInByBarcodeRequest.from(requestRepresentation).value())
       .withItem(Item.from(itemRepresentation))
-      .withRequestQueue(new RequestQueue(Collections.emptyList()))
+      .withRequestQueue(emptyQueue())
       .withLoggedInUserId(UUID.randomUUID().toString());
   }
 }

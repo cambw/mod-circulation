@@ -1,5 +1,6 @@
 package org.folio.circulation.domain;
 
+import static org.folio.circulation.domain.RequestQueue.emptyQueue;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -16,8 +17,7 @@ import api.support.builders.LocationBuilder;
 import io.vertx.core.json.JsonObject;
 
 public class LoanCheckInServiceTest {
-
-  private LoanCheckInService loanCheckInService = new LoanCheckInService();
+  private final LoanCheckInService loanCheckInService = new LoanCheckInService();
 
   @Test
   public void isInHouseUseWhenServicePointIsPrimaryForHomeLocation() {
@@ -35,8 +35,7 @@ public class LoanCheckInServiceTest {
     Item item = Item.from(itemRepresentation)
       .withLocation(Location.from(locationRepresentation));
 
-    assertTrue(loanCheckInService.isInHouseUse(item, createEmptyQueue(),
-      checkInRequest));
+    assertTrue(loanCheckInService.isInHouseUse(item, emptyQueue(), checkInRequest));
   }
 
   @Test
@@ -56,7 +55,7 @@ public class LoanCheckInServiceTest {
     Item item = Item.from(itemRepresentation)
       .withLocation(Location.from(locationRepresentation));
 
-    assertTrue(loanCheckInService.isInHouseUse(item, createEmptyQueue(), checkInRequest));
+    assertTrue(loanCheckInService.isInHouseUse(item, emptyQueue(), checkInRequest));
   }
 
   @Test
@@ -75,8 +74,7 @@ public class LoanCheckInServiceTest {
     Item item = Item.from(itemRepresentation)
       .withLocation(Location.from(locationRepresentation));
 
-    assertFalse(loanCheckInService.isInHouseUse(item, createEmptyQueue(),
-      checkInRequest));
+    assertFalse(loanCheckInService.isInHouseUse(item, emptyQueue(), checkInRequest));
   }
 
   @Test
@@ -117,7 +115,7 @@ public class LoanCheckInServiceTest {
     Item item = Item.from(itemRepresentation)
       .withLocation(Location.from(locationRepresentation));
 
-    assertFalse(loanCheckInService.isInHouseUse(item, createEmptyQueue(), checkInRequest));
+    assertFalse(loanCheckInService.isInHouseUse(item, emptyQueue(), checkInRequest));
   }
 
   private CheckInByBarcodeRequest getCheckInRequest(UUID checkInServicePoint) {
@@ -128,9 +126,5 @@ public class LoanCheckInServiceTest {
       .create();
 
     return CheckInByBarcodeRequest.from(representation).value();
-  }
-
-  private RequestQueue createEmptyQueue() {
-    return new RequestQueue(Collections.emptyList());
   }
 }

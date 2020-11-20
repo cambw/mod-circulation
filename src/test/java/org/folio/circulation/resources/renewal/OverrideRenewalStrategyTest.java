@@ -6,9 +6,9 @@ import static api.support.matchers.ResultMatchers.succeeded;
 import static api.support.matchers.TextDateTimeMatcher.withinSecondsAfter;
 import static api.support.matchers.ValidationErrorMatchers.hasMessage;
 import static api.support.matchers.ValidationErrorMatchers.hasMessageContaining;
-import static java.util.Collections.emptyList;
 import static java.util.Collections.singleton;
 import static org.folio.circulation.domain.ItemStatus.CHECKED_OUT;
+import static org.folio.circulation.domain.RequestQueue.emptyQueue;
 import static org.folio.circulation.domain.policy.Period.weeks;
 import static org.folio.circulation.support.json.JsonPropertyWriter.write;
 import static org.folio.circulation.support.json.JsonPropertyWriter.writeByPath;
@@ -314,7 +314,7 @@ public class OverrideRenewalStrategyTest {
     final JsonObject overrideRequest = createOverrideRequest(overrideDueDate);
 
     final RenewalContext renewalContext = RenewalContext.create(loan, overrideRequest, "no-user")
-      .withRequestQueue(new RequestQueue(emptyList()));
+      .withRequestQueue(emptyQueue());
 
     return renew(renewalContext);
   }

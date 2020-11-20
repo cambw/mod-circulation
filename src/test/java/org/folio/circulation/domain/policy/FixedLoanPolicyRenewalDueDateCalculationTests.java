@@ -4,10 +4,13 @@ import static api.support.matchers.FailureMatcher.hasNumberOfFailureMessages;
 import static api.support.matchers.FailureMatcher.hasValidationFailure;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
+import static org.folio.circulation.domain.RequestQueue.emptyQueue;
+import static org.folio.circulation.domain.RequestStatus.OPEN_NOT_YET_FILLED;
+import static org.folio.circulation.domain.RequestType.PAGE;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.joda.time.DateTimeZone.UTC;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -17,13 +20,11 @@ import org.folio.circulation.domain.Item;
 import org.folio.circulation.domain.Loan;
 import org.folio.circulation.domain.Request;
 import org.folio.circulation.domain.RequestQueue;
-import org.folio.circulation.domain.RequestStatus;
 import org.folio.circulation.domain.RequestType;
 import org.folio.circulation.resources.renewal.RegularRenewalStrategy;
-import org.folio.circulation.support.results.Result;
 import org.folio.circulation.support.http.server.ValidationError;
+import org.folio.circulation.support.results.Result;
 import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
 import org.junit.Test;
 
 import api.support.builders.FixedDueDateSchedule;
@@ -42,7 +43,7 @@ public class FixedLoanPolicyRenewalDueDateCalculationTests {
   private static final String EXPECTED_REASON_OPEN_RECALL_REQUEST =
     "items cannot be renewed when there is an active recall request";
 
-  private RegularRenewalStrategy regularRenewalStrategy = new RegularRenewalStrategy();
+  private final RegularRenewalStrategy regularRenewalStrategy = new RegularRenewalStrategy();
 
   @Test
   public void shouldFailWhenLoanDateIsBeforeOnlyScheduleAvailable() {
@@ -56,9 +57,9 @@ public class FixedLoanPolicyRenewalDueDateCalculationTests {
 
     Loan loan = existingLoan(loanPolicy);
 
-    DateTime renewalDate = new DateTime(2017, 12, 30, 14, 32, 21, DateTimeZone.UTC);
+    DateTime renewalDate = new DateTime(2017, 12, 30, 14, 32, 21, UTC);
 
-    final Result<Loan> result = regularRenewalStrategy.renew(loan, renewalDate, new RequestQueue(Collections.emptyList()));
+    final var result = regularRenewalStrategy.renew(loan, renewalDate, emptyQueue());
 
     assertThat(result, hasValidationFailure(
       EXPECTED_REASON_DATE_FALLS_OUTSIDE_DATE_RANGES));
@@ -78,7 +79,7 @@ public class FixedLoanPolicyRenewalDueDateCalculationTests {
 
     Loan loan = existingLoan(loanPolicy);
 
-    DateTime renewalDate = new DateTime(2018, 12, 15, 14, 32, 21, DateTimeZone.UTC);
+    DateTime renewalDate = new DateTime(2018, 12, 15, 14, 32, 21, UTC);
 
     String requestId = UUID.randomUUID().toString();
     RequestQueue requestQueue = creteRequestQueue(requestId, RequestType.RECALL);
@@ -105,7 +106,7 @@ public class FixedLoanPolicyRenewalDueDateCalculationTests {
 
     Loan loan = existingLoan(loanPolicy);
 
-    DateTime renewalDate = new DateTime(2019, 1, 1, 8, 10, 45, DateTimeZone.UTC);
+    DateTime renewalDate = new DateTime(2019, 1, 1, 8, 10, 45, UTC);
 
     String requestId = UUID.randomUUID().toString();
     RequestQueue requestQueue =  new RequestQueue(Collections.emptyList());
@@ -130,15 +131,14 @@ public class FixedLoanPolicyRenewalDueDateCalculationTests {
 
     Loan loan = existingLoan(loanPolicy);
 
-    DateTime renewalDate = new DateTime(2018, 3, 14, 11, 14, 54, DateTimeZone.UTC);
+    DateTime renewalDate = new DateTime(2018, 3, 14, 11, 14, 54, UTC);
 
     String requestId = UUID.randomUUID().toString();
-    RequestQueue requestQueue = creteRequestQueue(requestId, RequestType.PAGE);
+    RequestQueue requestQueue = creteRequestQueue(requestId, PAGE);
 
     final Result<Loan> result = regularRenewalStrategy.renew(loan, renewalDate, requestQueue);
 
-    assertThat(result.value().getDueDate(), is(new DateTime(2018, 12, 31, 23, 59, 59,
-      DateTimeZone.UTC)));
+    assertThat(result.value().getDueDate(), is(new DateTime(2018, 12, 31, 23, 59, 59, UTC)));
   }
 
   @Test
@@ -156,14 +156,14 @@ public class FixedLoanPolicyRenewalDueDateCalculationTests {
 
     Loan loan = new LoanBuilder()
       .open()
-      .withLoanDate(new DateTime(2018, 1, 20, 13, 45, 21, DateTimeZone.UTC))
-      .withDueDate(new DateTime(2018, 1, 31, 23, 59, 59, DateTimeZone.UTC))
+      .withLoanDate(new DateTime(2018, 1, 20, 13, 45, 21, UTC))
+      .withDueDate(new DateTime(2018, 1, 31, 23, 59, 59, UTC))
       .asDomainObject()
       .withLoanPolicy(loanPolicy);
 
-    DateTime renewalDate = new DateTime(2018, 2, 8, 11, 14, 54, DateTimeZone.UTC);
+    DateTime renewalDate = new DateTime(2018, 2, 8, 11, 14, 54, UTC);
 
-    final Result<Loan> result = regularRenewalStrategy.renew(loan, renewalDate, new RequestQueue(Collections.emptyList()));
+    final var result = regularRenewalStrategy.renew(loan, renewalDate, emptyQueue());
 
     assertThat(result.value().getDueDate(), is(expectedSchedule.due));
   }
@@ -183,9 +183,9 @@ public class FixedLoanPolicyRenewalDueDateCalculationTests {
 
     Loan loan = existingLoan(loanPolicy);
 
-    DateTime renewalDate = new DateTime(2018, 2, 27, 16, 23, 43, DateTimeZone.UTC);
+    DateTime renewalDate = new DateTime(2018, 2, 27, 16, 23, 43, UTC);
 
-    final Result<Loan> result = regularRenewalStrategy.renew(loan, renewalDate, new RequestQueue(Collections.emptyList()));
+    final var result = regularRenewalStrategy.renew(loan, renewalDate, emptyQueue());
 
     assertThat(result.value().getDueDate(), is(expectedSchedule.due));
   }
@@ -205,9 +205,9 @@ public class FixedLoanPolicyRenewalDueDateCalculationTests {
 
     Loan loan = existingLoan(loanPolicy);
 
-    DateTime renewalDate = new DateTime(2018, 3, 12, 7, 15, 23, DateTimeZone.UTC);
+    DateTime renewalDate = new DateTime(2018, 3, 12, 7, 15, 23, UTC);
 
-    final Result<Loan> result = regularRenewalStrategy.renew(loan, renewalDate, new RequestQueue(Collections.emptyList()));
+    final var result = regularRenewalStrategy.renew(loan, renewalDate, emptyQueue());
 
     assertThat(result.value().getDueDate(), is(expectedSchedule.due));
   }
@@ -230,9 +230,9 @@ public class FixedLoanPolicyRenewalDueDateCalculationTests {
 
     Loan loan = existingLoan(loanPolicy);
 
-    DateTime renewalDate = new DateTime(2018, 2, 5, 14, 22, 32, DateTimeZone.UTC);
+    DateTime renewalDate = new DateTime(2018, 2, 5, 14, 22, 32, UTC);
 
-    final Result<Loan> result = regularRenewalStrategy.renew(loan, renewalDate, new RequestQueue(Collections.emptyList()));
+    final var result = regularRenewalStrategy.renew(loan, renewalDate, emptyQueue());
 
     assertThat(result.value().getDueDate(), is(expectedSchedule.due));
   }
@@ -241,7 +241,7 @@ public class FixedLoanPolicyRenewalDueDateCalculationTests {
   public void shouldApplyAlternateScheduleWhenQueuedRequestIsHoldAndFixed() {
     final Period alternateCheckoutLoanPeriod = Period.from(2, "Weeks");
 
-    final DateTime systemTime = new DateTime(2019, 6, 14, 11, 23, 43, DateTimeZone.UTC);
+    final DateTime systemTime = new DateTime(2019, 6, 14, 11, 23, 43, UTC);
 
     LoanPolicy loanPolicy = LoanPolicy.from(new LoanPolicyBuilder()
       .fixed(UUID.randomUUID())
@@ -270,7 +270,7 @@ public class FixedLoanPolicyRenewalDueDateCalculationTests {
 
     Request requestTwo = Request.from(new RequestBuilder()
       .withId(UUID.randomUUID())
-      .withStatus(RequestStatus.OPEN_NOT_YET_FILLED.getValue())
+      .withStatus(OPEN_NOT_YET_FILLED.getValue())
       .hold()
       .withItemId(UUID.fromString(loan.getItemId()))
       .withPosition(2)
@@ -310,9 +310,9 @@ public class FixedLoanPolicyRenewalDueDateCalculationTests {
 
     Loan loan = existingLoan(loanPolicy);
 
-    DateTime renewalDate = new DateTime(2017, 12, 30, 14, 32, 21, DateTimeZone.UTC);
+    DateTime renewalDate = new DateTime(2017, 12, 30, 14, 32, 21, UTC);
 
-    final Result<Loan> result = regularRenewalStrategy.renew(loan, renewalDate, new RequestQueue(Collections.emptyList()));
+    final var result = regularRenewalStrategy.renew(loan, renewalDate, emptyQueue());
 
     assertThat(result, hasValidationFailure(
       EXPECTED_REASON_DATE_FALLS_OUTSIDE_DATE_RANGES));
@@ -332,14 +332,14 @@ public class FixedLoanPolicyRenewalDueDateCalculationTests {
 
     Loan loan = new LoanBuilder()
       .open()
-      .withLoanDate(new DateTime(2018, 1, 20, 13, 45, 21, DateTimeZone.UTC))
-      .withDueDate(new DateTime(2018, 1, 31, 23, 59, 59, DateTimeZone.UTC))
+      .withLoanDate(new DateTime(2018, 1, 20, 13, 45, 21, UTC))
+      .withDueDate(new DateTime(2018, 1, 31, 23, 59, 59, UTC))
       .asDomainObject()
       .withLoanPolicy(loanPolicy);
 
-    DateTime renewalDate = new DateTime(2018, 1, 3, 8, 12, 32, DateTimeZone.UTC);
+    DateTime renewalDate = new DateTime(2018, 1, 3, 8, 12, 32, UTC);
 
-    final Result<Loan> result = regularRenewalStrategy.renew(loan, renewalDate, new RequestQueue(Collections.emptyList()));
+    final var result = regularRenewalStrategy.renew(loan, renewalDate, emptyQueue());
 
     assertThat(result,
       hasValidationFailure("renewal would not change the due date"));
@@ -357,14 +357,14 @@ public class FixedLoanPolicyRenewalDueDateCalculationTests {
 
     Loan loan = new LoanBuilder()
       .open()
-      .withLoanDate(new DateTime(2018, 1, 20, 13, 45, 21, DateTimeZone.UTC))
-      .withDueDate(new DateTime(2018, 2, 28, 23, 59, 59, DateTimeZone.UTC))
+      .withLoanDate(new DateTime(2018, 1, 20, 13, 45, 21, UTC))
+      .withDueDate(new DateTime(2018, 2, 28, 23, 59, 59, UTC))
       .asDomainObject()
       .withLoanPolicy(loanPolicy);
 
-    DateTime renewalDate = new DateTime(2018, 1, 3, 8, 12, 32, DateTimeZone.UTC);
+    DateTime renewalDate = new DateTime(2018, 1, 3, 8, 12, 32, UTC);
 
-    final Result<Loan> result = regularRenewalStrategy.renew(loan, renewalDate, new RequestQueue(Collections.emptyList()));
+    final var result = regularRenewalStrategy.renew(loan, renewalDate, emptyQueue());
 
     assertThat(result,
       hasValidationFailure("renewal would not change the due date"));
@@ -384,17 +384,17 @@ public class FixedLoanPolicyRenewalDueDateCalculationTests {
 
     Loan loan = new LoanBuilder()
       .open()
-      .withLoanDate(new DateTime(2018, 1, 20, 13, 45, 21, DateTimeZone.UTC))
-      .withDueDate(new DateTime(2018, 1, 31, 23, 59, 59, DateTimeZone.UTC))
+      .withLoanDate(new DateTime(2018, 1, 20, 13, 45, 21, UTC))
+      .withDueDate(new DateTime(2018, 1, 31, 23, 59, 59, UTC))
       .asDomainObject()
       .withLoanPolicy(loanPolicy);
 
     loan = regularRenewalStrategy.renew(loan,
-      new DateTime(2018, 2, 1, 11, 23, 43, DateTimeZone.UTC), new RequestQueue(Collections.emptyList())).value();
+      new DateTime(2018, 2, 1, 11, 23, 43, UTC), emptyQueue()).value();
 
-    DateTime renewalDate = new DateTime(2018, 3, 5, 8, 12, 32, DateTimeZone.UTC);
+    DateTime renewalDate = new DateTime(2018, 3, 5, 8, 12, 32, UTC);
 
-    final Result<Loan> result = regularRenewalStrategy.renew(loan, renewalDate, new RequestQueue(Collections.emptyList()));
+    final var result = regularRenewalStrategy.renew(loan, renewalDate, emptyQueue());
 
     assertThat(result, hasValidationFailure(
       EXPECTED_REASON_DATE_FALLS_OUTSIDE_DATE_RANGES));
@@ -419,15 +419,15 @@ public class FixedLoanPolicyRenewalDueDateCalculationTests {
 
     Loan loan = new LoanBuilder()
       .open()
-      .withLoanDate(new DateTime(2018, 1, 20, 13, 45, 21, DateTimeZone.UTC))
-      .withDueDate(new DateTime(2018, 1, 31, 23, 59, 59, DateTimeZone.UTC))
+      .withLoanDate(new DateTime(2018, 1, 20, 13, 45, 21, UTC))
+      .withDueDate(new DateTime(2018, 1, 31, 23, 59, 59, UTC))
       .asDomainObject()
       .withLoanPolicy(loanPolicy);
 
     loan = regularRenewalStrategy.renew(loan,
-      new DateTime(2018, 2, 1, 11, 23, 43, DateTimeZone.UTC), new RequestQueue(Collections.emptyList())).value();
+      new DateTime(2018, 2, 1, 11, 23, 43, UTC), emptyQueue()).value();
 
-    DateTime renewalDate = new DateTime(2018, 3, 5, 8, 12, 32, DateTimeZone.UTC);
+    DateTime renewalDate = new DateTime(2018, 3, 5, 8, 12, 32, UTC);
 
 
     String requestId = UUID.randomUUID().toString();
@@ -460,12 +460,11 @@ public class FixedLoanPolicyRenewalDueDateCalculationTests {
 
     Loan loan = existingLoan(loanPolicy);
 
-    DateTime renewalDate = new DateTime(2018, 4, 1, 6, 34, 21, DateTimeZone.UTC);
+    DateTime renewalDate = new DateTime(2018, 4, 1, 6, 34, 21, UTC);
 
-    final Result<Loan> result = regularRenewalStrategy.renew(loan, renewalDate, new RequestQueue(Collections.emptyList()));
+    final var result = regularRenewalStrategy.renew(loan, renewalDate, emptyQueue());
 
-    assertThat(result, hasValidationFailure(
-      EXPECTED_REASON_DATE_FALLS_OUTSIDE_DATE_RANGES));
+    assertThat(result, hasValidationFailure(EXPECTED_REASON_DATE_FALLS_OUTSIDE_DATE_RANGES));
   }
 
   @Test
@@ -481,12 +480,11 @@ public class FixedLoanPolicyRenewalDueDateCalculationTests {
 
     Loan loan = existingLoan(loanPolicy);
 
-    DateTime renewalDate = new DateTime(2018, 2, 18, 6, 34, 21, DateTimeZone.UTC);
+    DateTime renewalDate = new DateTime(2018, 2, 18, 6, 34, 21, UTC);
 
-    final Result<Loan> result = regularRenewalStrategy.renew(loan, renewalDate, new RequestQueue(Collections.emptyList()));
+    final var result = regularRenewalStrategy.renew(loan, renewalDate, emptyQueue());
 
-    assertThat(result, hasValidationFailure(
-      EXPECTED_REASON_DATE_FALLS_OUTSIDE_DATE_RANGES));
+    assertThat(result, hasValidationFailure(EXPECTED_REASON_DATE_FALLS_OUTSIDE_DATE_RANGES));
   }
 
   @Test
@@ -497,20 +495,18 @@ public class FixedLoanPolicyRenewalDueDateCalculationTests {
       .create())
       .withDueDateSchedules(new FixedDueDateSchedulesBuilder().create());
 
-
     Loan loan = existingLoan(loanPolicy);
 
-    DateTime renewalDate = new DateTime(2018, 3, 14, 11, 14, 54, DateTimeZone.UTC);
+    DateTime renewalDate = new DateTime(2018, 3, 14, 11, 14, 54, UTC);
 
-    final Result<Loan> result = regularRenewalStrategy.renew(loan, renewalDate, new RequestQueue(Collections.emptyList()));
+    final var result = regularRenewalStrategy.renew(loan, renewalDate, emptyQueue());
 
-    assertThat(result, hasValidationFailure(
-      EXPECTED_REASON_DATE_FALLS_OUTSIDE_DATE_RANGES));
+    assertThat(result, hasValidationFailure(EXPECTED_REASON_DATE_FALLS_OUTSIDE_DATE_RANGES));
   }
 
   @Test
   public void shouldFailWhenSchedulesCollectionIsNull() {
-    DateTime renewalDate = new DateTime(2018, 3, 14, 11, 14, 54, DateTimeZone.UTC);
+    DateTime renewalDate = new DateTime(2018, 3, 14, 11, 14, 54, UTC);
 
     final FixedScheduleRenewalDueDateStrategy calculator =
       new FixedScheduleRenewalDueDateStrategy(UUID.randomUUID().toString(),
@@ -521,13 +517,12 @@ public class FixedLoanPolicyRenewalDueDateCalculationTests {
 
     final Result<DateTime> result = calculator.calculateDueDate(loan);
 
-    assertThat(result, hasValidationFailure(
-      EXPECTED_REASON_DATE_FALLS_OUTSIDE_DATE_RANGES));
+    assertThat(result, hasValidationFailure(EXPECTED_REASON_DATE_FALLS_OUTSIDE_DATE_RANGES));
   }
 
   @Test
   public void shouldFailWhenNoSchedules() {
-    DateTime renewalDate = new DateTime(2018, 3, 14, 11, 14, 54, DateTimeZone.UTC);
+    DateTime renewalDate = new DateTime(2018, 3, 14, 11, 14, 54, UTC);
 
     final FixedScheduleRenewalDueDateStrategy calculator =
       new FixedScheduleRenewalDueDateStrategy(UUID.randomUUID().toString(),
@@ -538,8 +533,7 @@ public class FixedLoanPolicyRenewalDueDateCalculationTests {
 
     final Result<DateTime> result = calculator.calculateDueDate(loan);
 
-    assertThat(result, hasValidationFailure(
-      EXPECTED_REASON_DATE_FALLS_OUTSIDE_DATE_RANGES));
+    assertThat(result, hasValidationFailure(EXPECTED_REASON_DATE_FALLS_OUTSIDE_DATE_RANGES));
   }
 
   UUID checkoutServicePointId = UUID.randomUUID();
@@ -552,8 +546,8 @@ public class FixedLoanPolicyRenewalDueDateCalculationTests {
   private Loan existingLoan() {
     return new LoanBuilder()
       .open()
-      .withLoanDate(new DateTime(2018, 1, 20, 13, 45, 21, DateTimeZone.UTC))
-      .withDueDate(new DateTime(2018, 1, 31, 23, 59, 59, DateTimeZone.UTC))
+      .withLoanDate(new DateTime(2018, 1, 20, 13, 45, 21, UTC))
+      .withDueDate(new DateTime(2018, 1, 31, 23, 59, 59, UTC))
       .withCheckoutServicePointId(checkoutServicePointId)
       .asDomainObject();
   }
@@ -563,8 +557,6 @@ public class FixedLoanPolicyRenewalDueDateCalculationTests {
       .put("id", requestId)
       .put("requestType", requestType.getValue());
 
-    RequestQueue requestQueue = new RequestQueue(new ArrayList<>());
-
-    return requestQueue.add(Request.from(requestRepresentation));
+    return emptyQueue().add(Request.from(requestRepresentation));
   }
 }

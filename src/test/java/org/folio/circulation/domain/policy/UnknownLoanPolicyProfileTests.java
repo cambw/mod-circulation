@@ -1,10 +1,11 @@
 package org.folio.circulation.domain.policy;
 
 import static api.support.matchers.FailureMatcher.hasValidationFailure;
+import static org.folio.circulation.domain.RequestQueue.emptyQueue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.joda.time.DateTime.now;
 
 import org.folio.circulation.domain.Loan;
-import org.folio.circulation.domain.RequestQueue;
 import org.folio.circulation.resources.renewal.RegularRenewalStrategy;
 import org.folio.circulation.support.results.Result;
 import org.joda.time.DateTime;
@@ -13,8 +14,6 @@ import org.junit.Test;
 
 import api.support.builders.LoanBuilder;
 import api.support.builders.LoanPolicyBuilder;
-
-import java.util.Collections;
 
 public class UnknownLoanPolicyProfileTests {
   @Test
@@ -53,7 +52,7 @@ public class UnknownLoanPolicyProfileTests {
       .asDomainObject()
       .withLoanPolicy(loanPolicy);
 
-    final Result<Loan> result = regularRenewalStrategy.renew(loan, DateTime.now(), new RequestQueue(Collections.emptyList()));
+    final var result = regularRenewalStrategy.renew(loan, now(), emptyQueue());
 
     assertThat(result, hasValidationFailure(
       "profile \"Unknown profile\" in the loan policy is not recognised"));

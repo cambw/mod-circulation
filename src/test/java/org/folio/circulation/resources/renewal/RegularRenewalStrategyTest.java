@@ -3,9 +3,9 @@ package org.folio.circulation.resources.renewal;
 import static api.support.matchers.ResultMatchers.hasValidationError;
 import static api.support.matchers.ResultMatchers.hasValidationErrors;
 import static api.support.matchers.ValidationErrorMatchers.hasMessage;
-import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static org.folio.circulation.domain.ItemStatus.AGED_TO_LOST;
+import static org.folio.circulation.domain.RequestQueue.emptyQueue;
 import static org.folio.circulation.domain.policy.Period.days;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -233,16 +233,12 @@ public class RegularRenewalStrategyTest {
 
   private Result<Loan> renew(Loan loan, Request topRequest) {
     final var requestQueue = new RequestQueue(singletonList(topRequest));
-    final var systemDate = now(UTC);
 
-    return new RegularRenewalStrategy().renew(loan, systemDate, requestQueue);
+    return new RegularRenewalStrategy().renew(loan, now(UTC), requestQueue);
   }
 
   private Result<Loan> renew(Loan loan) {
-    final var requestQueue = new RequestQueue(emptyList());
-    final var systemDate = now(UTC);
-
-    return new RegularRenewalStrategy().renew(loan, systemDate, requestQueue);
+    return new RegularRenewalStrategy().renew(loan, now(UTC), emptyQueue());
   }
 
   private Result<Loan> renew(LoanPolicy loanPolicy, Request topRequest) {
