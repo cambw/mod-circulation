@@ -27,8 +27,7 @@ public class RequestQueue {
     // without sorting and just re-sequence from 1 to n
     this.requests.sort(Comparator
       .comparingInt(request -> Optional.ofNullable(request.getPosition())
-        .orElse(0)
-      ));
+        .orElse(0)));
   }
 
   ItemStatus checkedInItemStatus() {
@@ -75,12 +74,14 @@ public class RequestQueue {
     updatedRequests.add(new UpdatedRequestPair(original, updated));
   }
 
-  public void remove(Request request) {
+  public RequestQueue remove(Request request) {
     requests = requests.stream()
       .filter(r -> !r.getId().equals(request.getId()))
       .collect(Collectors.toList());
     request.removePosition();
     reSequenceRequests();
+
+    return this;
   }
 
   private void reSequenceRequests() {

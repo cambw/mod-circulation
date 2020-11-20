@@ -1,6 +1,8 @@
 package org.folio.circulation.domain;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.folio.circulation.domain.RequestStatus.CLOSED_CANCELLED;
 import static org.folio.circulation.support.results.Result.of;
 import static org.folio.circulation.support.results.Result.succeeded;
 import static org.hamcrest.CoreMatchers.is;
@@ -16,7 +18,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 
 import org.folio.circulation.domain.reorder.ReorderQueueRequest;
 import org.folio.circulation.domain.reorder.ReorderRequest;
@@ -26,8 +27,8 @@ import org.folio.circulation.resources.context.ReorderRequestContext;
 import org.folio.circulation.support.Clients;
 import org.folio.circulation.support.CollectionResourceClient;
 import org.folio.circulation.support.ForwardOnFailure;
-import org.folio.circulation.support.results.Result;
 import org.folio.circulation.support.http.client.Response;
+import org.folio.circulation.support.results.Result;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -150,7 +151,7 @@ public class UpdateRequestQueueTest {
       updateRequestQueue.onMovedFrom(moveFromRequestContext);
 
     Result<RequestAndRelatedRecords> result = completableFuture
-      .get(5, TimeUnit.SECONDS);
+      .get(5, SECONDS);
 
     assertTrue(result.succeeded());
     verifyNoInteractions(requestQueueRepository);
@@ -170,7 +171,7 @@ public class UpdateRequestQueueTest {
       updateRequestQueue.onMovedTo(moveFromRequestContext);
 
     Result<RequestAndRelatedRecords> result = completableFuture
-      .get(5, TimeUnit.SECONDS);
+      .get(5, SECONDS);
 
     assertTrue(result.succeeded());
     verifyNoInteractions(requestQueueRepository);
@@ -245,14 +246,15 @@ public class UpdateRequestQueueTest {
   private RequestAndRelatedRecords createCancellationContext() {
     UUID itemId = UUID.randomUUID();
 
-    RequestQueue requestQueue = createRequestQueue(itemId, 4);
-    Request request = requestQueue.getRequests().iterator().next();
-    request.changeStatus(RequestStatus.CLOSED_CANCELLED);
+    final var requestQueue = createRequestQueue(itemId, 4);
+    final var request = requestQueue.getRequests().iterator().next();
 
-    requestQueue.remove(request);
+    request.changeStatus(CLOSED_CANCELLED);
+
+    final var updatedQueue = requestQueue.remove(request);
 
     return new RequestAndRelatedRecords(request)
-      .withRequestQueue(requestQueue);
+      .withRequestQueue(updatedQueue);
   }
 
   private RequestAndRelatedRecords createRequestContext() {
@@ -265,7 +267,7 @@ public class UpdateRequestQueueTest {
   private <T> void assertFailedOnFailureResponse(
     CompletableFuture<Result<T>> completableFuture) throws Exception {
 
-    Result<T> result = completableFuture.get(5, TimeUnit.SECONDS);
+    Result<T> result = completableFuture.get(5, SECONDS);
 
     assertTrue(result.failed());
     assertTrue(result.cause() instanceof ForwardOnFailure);

@@ -1,7 +1,7 @@
 package org.folio.circulation.domain;
 
 import static org.folio.circulation.domain.representations.logs.LogEventType.REQUEST_UPDATED;
-import static org.folio.circulation.support.results.Result.succeeded;
+import static org.folio.circulation.support.results.Result.of;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -51,10 +51,15 @@ public class UpdateRequestService {
 
     final Request request = requestAndRelatedRecords.getRequest();
 
-    if(request.isCancelled()) {
-      requestAndRelatedRecords.getRequestQueue().remove(request);
+    if (request.isCancelled()) {
+      final var updatedQueue = requestAndRelatedRecords.getRequestQueue()
+        .remove(request);
+
+      return of(() -> requestAndRelatedRecords.withRequestQueue(updatedQueue));
+    }
+    else {
+      return of(() -> requestAndRelatedRecords);
     }
 
-    return succeeded(requestAndRelatedRecords);
   }
 }

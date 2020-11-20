@@ -2,6 +2,7 @@ package org.folio.circulation.domain;
 
 import static java.util.Comparator.comparingInt;
 import static java.util.concurrent.CompletableFuture.completedFuture;
+import static org.folio.circulation.domain.RequestStatus.CLOSED_FILLED;
 import static org.folio.circulation.support.results.Result.ofAsync;
 import static org.folio.circulation.support.results.Result.succeeded;
 
@@ -178,23 +179,22 @@ public class UpdateRequestQueue {
 
   private CompletableFuture<Result<RequestQueue>> onCheckOut(RequestQueue requestQueue) {
     if (requestQueue.hasOutstandingFulfillableRequests()) {
-      Request firstRequest = requestQueue.getHighestPriorityFulfillableRequest();
-
-      Request originalRequest = Request.from(firstRequest.asJson());
+      final var firstRequest = requestQueue.getHighestPriorityFulfillableRequest();
+      final var originalRequest = Request.from(firstRequest.asJson());
 
       log.info("Closing request '{}'", firstRequest.getId());
-      firstRequest.changeStatus(RequestStatus.CLOSED_FILLED);
+      firstRequest.changeStatus(CLOSED_FILLED);
 
       log.info("Removing request '{}' from queue", firstRequest.getId());
-      requestQueue.remove(firstRequest);
+      final var updatedQueue = requestQueue.remove(firstRequest);
 
       Request updatedRequest = Request.from(firstRequest.asJson());
 
-      requestQueue.update(originalRequest, updatedRequest);
+      updatedQueue.update(originalRequest, updatedRequest);
 
       return requestRepository.update(firstRequest)
         .thenComposeAsync(r -> r.after(v ->
-          requestQueueRepository.updateRequestsWithChangedPositions(requestQueue)));
+          requestQueueRepository.updateRequestsWithChangedPositions(updatedQueue)));
 
     } else {
       return completedFuture(succeeded(requestQueue));
@@ -226,12 +226,15 @@ public class UpdateRequestQueue {
 
   CompletableFuture<Result<RequestAndRelatedRecords>> onMovedFrom(
     RequestAndRelatedRecords requestAndRelatedRecords) {
-    final Request request = requestAndRelatedRecords.getRequest();
+
+    final var request = requestAndRelatedRecords.getRequest();
+
     if (requestAndRelatedRecords.getSourceItemId().equals(request.getItemId())) {
-      final RequestQueue requestQueue = requestAndRelatedRecords.getRequestQueue();
-      requestQueue.remove(request);
-      return requestQueueRepository.updateRequestsWithChangedPositions(requestQueue)
-            .thenApply(r -> r.map(requestAndRelatedRecords::withRequestQueue));
+      final var requestQueue = requestAndRelatedRecords.getRequestQueue();
+      final var updatedQueue = requestQueue.remove(request);
+
+      return requestQueueRepository.updateRequestsWithChangedPositions(updatedQueue)
+        .thenApply(r -> r.map(requestAndRelatedRecords::withRequestQueue));
     }
     else {
       return completedFuture(succeeded(requestAndRelatedRecords));
@@ -241,7 +244,7 @@ public class UpdateRequestQueue {
   CompletableFuture<Result<RequestAndRelatedRecords>> onMovedTo(
     RequestAndRelatedRecords requestAndRelatedRecords) {
 
-    final Request request = requestAndRelatedRecords.getRequest();
+    final var request = requestAndRelatedRecords.getRequest();
 
     if (requestAndRelatedRecords.getDestinationItemId().equals(request.getItemId())) {
       final RequestQueue requestQueue = requestAndRelatedRecords.getRequestQueue();
@@ -259,10 +262,7 @@ public class UpdateRequestQueue {
 
   public CompletableFuture<Result<Request>> onDeletion(Request request) {
     return requestQueueRepository.get(request.getItemId())
-      .thenApply(r -> r.map(requestQueue -> {
-        requestQueue.remove(request);
-        return requestQueue;
-      }))
+      .thenApply(r -> r.map(requestQueue -> requestQueue.remove(request)))
       .thenComposeAsync(r -> r.after(
         requestQueueRepository::updateRequestsWithChangedPositions))
       .thenApply(r -> r.map(requestQueue -> request));
@@ -274,8 +274,7 @@ public class UpdateRequestQueue {
     // 1st: set new positions for the requests in the queue
     return result.after(context -> {
       context.getReorderRequestToRequestMap().forEach(
-        (reorderRequest, request) -> request.changePosition(reorderRequest.getNewPosition())
-      );
+        (reorderRequest, request) -> request.changePosition(reorderRequest.getNewPosition()));
 
       // 2nd: Call storage module to reorder requests.
       return completedFuture(succeeded(context))
