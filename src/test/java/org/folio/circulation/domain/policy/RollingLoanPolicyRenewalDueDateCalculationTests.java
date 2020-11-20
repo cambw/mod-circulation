@@ -1,12 +1,14 @@
 package org.folio.circulation.domain.policy;
 
-import api.support.builders.FixedDueDateSchedule;
-import api.support.builders.FixedDueDateSchedulesBuilder;
-import api.support.builders.LoanBuilder;
-import api.support.builders.LoanPolicyBuilder;
-import io.vertx.core.json.JsonObject;
-import junitparams.JUnitParamsRunner;
-import junitparams.Parameters;
+import static api.support.matchers.FailureMatcher.hasNumberOfFailureMessages;
+import static api.support.matchers.FailureMatcher.hasValidationFailure;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.UUID;
+
 import org.folio.circulation.domain.Loan;
 import org.folio.circulation.domain.Request;
 import org.folio.circulation.domain.RequestQueue;
@@ -18,14 +20,13 @@ import org.joda.time.DateTimeZone;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.UUID;
-
-import static api.support.matchers.FailureMatcher.hasNumberOfFailureMessages;
-import static api.support.matchers.FailureMatcher.hasValidationFailure;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
+import api.support.builders.FixedDueDateSchedule;
+import api.support.builders.FixedDueDateSchedulesBuilder;
+import api.support.builders.LoanBuilder;
+import api.support.builders.LoanPolicyBuilder;
+import io.vertx.core.json.JsonObject;
+import junitparams.JUnitParamsRunner;
+import junitparams.Parameters;
 
 @RunWith(JUnitParamsRunner.class)
 public class RollingLoanPolicyRenewalDueDateCalculationTests {
@@ -471,7 +472,7 @@ public class RollingLoanPolicyRenewalDueDateCalculationTests {
       .put("requestType", requestType.getValue());
 
     RequestQueue requestQueue = new RequestQueue(new ArrayList<>());
-    requestQueue.add(Request.from(requestRepresentation));
-    return requestQueue;
+
+    return requestQueue.add(Request.from(requestRepresentation));
   }
 }

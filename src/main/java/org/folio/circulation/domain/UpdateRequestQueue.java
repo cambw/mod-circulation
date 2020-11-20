@@ -203,11 +203,13 @@ public class UpdateRequestQueue {
 
   CompletableFuture<Result<RequestAndRelatedRecords>> onCreate(
     RequestAndRelatedRecords requestAndRelatedRecords) {
-    final Request request = requestAndRelatedRecords.getRequest();
-    final RequestQueue requestQueue = requestAndRelatedRecords.getRequestQueue();
-    requestQueue.add(request);
-    return requestQueueRepository.updateRequestsWithChangedPositions(requestQueue)
-        .thenApply(r -> r.map(requestAndRelatedRecords::withRequestQueue));
+
+    final var request = requestAndRelatedRecords.getRequest();
+    final var requestQueue = requestAndRelatedRecords.getRequestQueue();
+    final var queueWithNewRequest = requestQueue.add(request);
+
+    return requestQueueRepository.updateRequestsWithChangedPositions(queueWithNewRequest)
+      .thenApply(r -> r.map(requestAndRelatedRecords::withRequestQueue));
   }
 
   CompletableFuture<Result<RequestAndRelatedRecords>> onCancellation(
@@ -238,14 +240,17 @@ public class UpdateRequestQueue {
 
   CompletableFuture<Result<RequestAndRelatedRecords>> onMovedTo(
     RequestAndRelatedRecords requestAndRelatedRecords) {
+
     final Request request = requestAndRelatedRecords.getRequest();
+
     if (requestAndRelatedRecords.getDestinationItemId().equals(request.getItemId())) {
       final RequestQueue requestQueue = requestAndRelatedRecords.getRequestQueue();
       // NOTE: it is important to remove position when moving request from one queue to another
       request.removePosition();
-      requestQueue.add(request);
-      return requestQueueRepository.updateRequestsWithChangedPositions(requestQueue)
-            .thenApply(r -> r.map(requestAndRelatedRecords::withRequestQueue));
+      final var queueWithMovedRequest = requestQueue.add(request);
+
+      return requestQueueRepository.updateRequestsWithChangedPositions(queueWithMovedRequest)
+        .thenApply(r -> r.map(requestAndRelatedRecords::withRequestQueue));
     }
     else {
       return completedFuture(succeeded(requestAndRelatedRecords));

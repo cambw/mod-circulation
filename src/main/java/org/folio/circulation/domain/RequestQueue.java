@@ -59,10 +59,12 @@ public class RequestQueue {
       .collect(Collectors.toList());
   }
 
-  public void add(Request newRequest) {
+  public RequestQueue add(Request newRequest) {
     requests = new ArrayList<>(requests);
     requests.add(newRequest);
     reSequenceRequests();
+
+    return this;
   }
 
   public void update(Request original, Request updated) {

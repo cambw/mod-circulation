@@ -564,7 +564,7 @@ public class FixedLoanPolicyRenewalDueDateCalculationTests {
       .put("requestType", requestType.getValue());
 
     RequestQueue requestQueue = new RequestQueue(new ArrayList<>());
-    requestQueue.add(Request.from(requestRepresentation));
-    return requestQueue;
+
+    return requestQueue.add(Request.from(requestRepresentation));
   }
 }
