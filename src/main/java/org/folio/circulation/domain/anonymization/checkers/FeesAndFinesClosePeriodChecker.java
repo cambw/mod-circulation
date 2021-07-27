@@ -2,18 +2,20 @@ package org.folio.circulation.domain.anonymization.checkers;
 
 import java.util.Optional;
 
+import org.folio.circulation.Clock;
 import org.folio.circulation.domain.Account;
 import org.folio.circulation.domain.Loan;
 import org.folio.circulation.domain.policy.Period;
-import org.folio.circulation.support.utils.ClockUtil;
 import org.folio.circulation.support.utils.DateTimeUtil;
 import org.joda.time.DateTime;
 
 public class FeesAndFinesClosePeriodChecker implements AnonymizationChecker {
   private final Period period;
+  private final Clock clock;
 
-  public FeesAndFinesClosePeriodChecker(Period period) {
+  public FeesAndFinesClosePeriodChecker(Period period, Clock clock) {
     this.period = period;
+    this.clock = clock;
   }
 
   @Override
@@ -25,7 +27,6 @@ public class FeesAndFinesClosePeriodChecker implements AnonymizationChecker {
     return findLatestAccountCloseDate(loan)
       .map(this::latestAccountClosedEarlierThanPeriod)
       .orElse(false);
-
   }
 
   private Optional<DateTime> findLatestAccountCloseDate(Loan loan) {
@@ -47,7 +48,6 @@ public class FeesAndFinesClosePeriodChecker implements AnonymizationChecker {
       return false;
     }
 
-    return ClockUtil.getDateTime()
-      .isAfter(lastAccountClosed.plus(period.timePeriod()));
+    return clock.now().isAfter(lastAccountClosed.plus(period.timePeriod()));
   }
 }
