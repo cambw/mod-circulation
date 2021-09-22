@@ -68,7 +68,7 @@ public class UpdateLoan {
 
   private CompletableFuture<Result<RequestAndRelatedRecords>> recall(Loan loan,
       RequestAndRelatedRecords requestAndRelatedRecords, Request request) {
-    if (loan.wasDueDateChangedByRecall()) {
+    if (loan.cannotChangeDueDateByRecall()) {
       // We don't need to apply the recall
       return completedFuture(succeeded(requestAndRelatedRecords));
     } else {
@@ -89,7 +89,7 @@ public class UpdateLoan {
     LoanPolicy loanPolicy = loan.getLoanPolicy();
 
     // loanPolicy.recall is a public method and may be called outside of the context of the
-    // loan.wasDueDateChangedByRecall() condition found in the recall method of this class.
+    // loan.cannotChangeDueDateByRecall() condition found in the recall method of this class.
     return loanPolicy.recall(loan)
         .map(loanAndRelatedRecords::withLoan);
   }

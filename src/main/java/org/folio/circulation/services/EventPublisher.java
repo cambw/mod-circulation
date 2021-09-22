@@ -191,7 +191,7 @@ public class EventPublisher {
       write(payloadJsonObject, USER_ID_FIELD, loan.getUserId());
       write(payloadJsonObject, LOAN_ID_FIELD, loan.getId());
       write(payloadJsonObject, DUE_DATE_FIELD, loan.getDueDate());
-      write(payloadJsonObject, DUE_DATE_CHANGED_BY_RECALL_FIELD, loan.wasDueDateChangedByRecall());
+      write(payloadJsonObject, DUE_DATE_CHANGED_BY_RECALL_FIELD, loan.cannotChangeDueDateByRecall());
 
       runAsync(() -> publishDueDateLogEvent(loan));
       if (renewalContext) {

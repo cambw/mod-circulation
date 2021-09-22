@@ -168,7 +168,7 @@ public class OverdueFineCalculatorService {
     OverdueFinePolicy overdueFinePolicy = loan.getOverdueFinePolicy();
     if (overdueMinutes > 0 && overdueFinePolicy != null) {
       OverdueFineCalculationParameters calculationParameters =
-        overdueFinePolicy.getCalculationParameters(loan.wasDueDateChangedByRecall());
+        overdueFinePolicy.getCalculationParameters(loan.cannotChangeDueDateByRecall());
 
       if (calculationParameters != null) {
         BigDecimal finePerInterval = calculationParameters.getFinePerInterval();

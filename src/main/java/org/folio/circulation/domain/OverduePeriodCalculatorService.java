@@ -141,7 +141,7 @@ public class OverduePeriodCalculatorService {
   }
 
   private boolean shouldIgnoreGracePeriod(Loan loan) {
-    if (!loan.wasDueDateChangedByRecall()) {
+    if (!loan.cannotChangeDueDateByRecall()) {
       return false;
     }
 

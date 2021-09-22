@@ -1,6 +1,7 @@
 package org.folio.circulation.domain;
 
 import static java.lang.Boolean.TRUE;
+import static java.lang.Boolean.FALSE;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
@@ -120,8 +121,13 @@ public class Loan implements ItemRelatedRecord, UserRelatedRecord {
     return this;
   }
 
-  public Loan changeDueDateChangedByRecall() {
+  public Loan setDueDateChangedByRecall() {
     write(representation, "dueDateChangedByRecall", TRUE);
+
+    return this;
+  }
+  public Loan clearDueDateChangedByRecall() {
+    write(representation, "dueDateChangedByRecall", FALSE);
 
     return this;
   }
@@ -221,7 +227,7 @@ public class Loan implements ItemRelatedRecord, UserRelatedRecord {
     return getStatus() == LoanStatus.OPEN;
   }
 
-  public boolean wasDueDateChangedByRecall() {
+  public boolean cannotChangeDueDateByRecall() {
     return getBooleanProperty(representation, "dueDateChangedByRecall");
   }
 

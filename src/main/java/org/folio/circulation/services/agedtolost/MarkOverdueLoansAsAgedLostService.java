@@ -94,7 +94,7 @@ public class MarkOverdueLoansAsAgedLostService {
   private Loan ageItemToLost(Loan loan) {
     final LostItemPolicy lostItemPolicy = loan.getLostItemPolicy();
     final DateTime ageToLostDate = ClockUtil.getDateTime();
-    final boolean isRecalled = loan.wasDueDateChangedByRecall();
+    final boolean isRecalled = loan.cannotChangeDueDateByRecall();
 
     final DateTime whenToBill = lostItemPolicy
       .calculateDateTimeWhenPatronBilledForAgedToLost(isRecalled, ageToLostDate);
@@ -127,7 +127,7 @@ public class MarkOverdueLoansAsAgedLostService {
   }
 
   private boolean shouldAgeLoanToLost(Loan loan) {
-    final boolean isRecalled = loan.wasDueDateChangedByRecall();
+    final boolean isRecalled = loan.cannotChangeDueDateByRecall();
     final boolean shouldAgeToLost = loan.getLostItemPolicy().canAgeLoanToLost(
       isRecalled, loan.getDueDate());
 

@@ -37,7 +37,7 @@ public class LoanService {
     final Loan loanToRecall = records.getLoan();
     final LoanPolicy loanPolicy = loanToRecall.getLoanPolicy();
 
-    if (loanToRecall.wasDueDateChangedByRecall()) {
+    if (loanToRecall.cannotChangeDueDateByRecall()) {
       return completedFuture(succeeded(records));
     }
 
