@@ -40,6 +40,7 @@ import static org.folio.circulation.support.results.Result.succeeded;
 import static org.folio.circulation.support.results.ResultBinding.mapResult;
 import static org.folio.circulation.support.utils.DateTimeUtil.isAfterMillis;
 
+import java.util.stream.Collectors;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
@@ -122,7 +123,7 @@ public abstract class RenewalResource extends Resource {
 
     routeRegistration.create(this::renew);
   }
-
+  
   private void renew(RoutingContext routingContext) {
     final WebContext webContext = new WebContext(routingContext);
     final Clients clients = Clients.create(webContext, client);
@@ -162,7 +163,6 @@ public abstract class RenewalResource extends Resource {
       RENEWAL_BLOCK, overrideBlocks, permissions);
     isRenewalBlockOverrideRequested = overrideBlocks.getRenewalBlockOverride().isRequested() ||
       overrideBlocks.getRenewalDueDateRequiredBlockOverride().isRequested();
-
     findLoan(bodyAsJson, loanRepository, itemRepository, userRepository, errorHandler)
       .thenApply(r -> r.map(loan -> RenewalContext.create(loan, bodyAsJson, webContext.getUserId())))
       .thenComposeAsync(r-> refuseWhenPatronIsInactive(r, errorHandler, USER_IS_INACTIVE))
@@ -179,6 +179,7 @@ public abstract class RenewalResource extends Resource {
         RenewalContext::withTimeZone))
       .thenComposeAsync(r -> r.after(context -> renew(context, clients, errorHandler)))
       .thenApply(r -> r.next(errorHandler::failWithValidationErrors))
+      .thenApply(r -> unsetDateTruncationFlagIfNoOpenRecallsInQueue(r))
       .thenComposeAsync(r -> r.after(storeLoanAndItem::updateLoanAndItemInStorage))
       .thenComposeAsync(r -> r.after(context -> processFeesFines(context, clients)))
       .thenApplyAsync(r -> r.next(feeFineNoticesService::scheduleOverdueFineNotices))
@@ -188,6 +189,23 @@ public abstract class RenewalResource extends Resource {
       .thenApply(r -> r.map(loanRepresentation::extendedLoan))
       .thenApply(r -> r.map(this::toResponse))
       .thenAccept(webContext::writeResultToHttpResponse);
+  }
+
+  private Result<RenewalContext> unsetDateTruncationFlagIfNoOpenRecallsInQueue(
+    Result<RenewalContext> renewalContext) {
+    Loan loan = renewalContext.value().getLoan();
+    RequestQueue queue = renewalContext.value().getRequestQueue();
+    Integer numberOfNotYetFilledRecalls = 0;
+    if (queue.containsRequestOfType(RequestType.RECALL)) {
+      List<Request> openRecalls = queue.getRequests().stream()
+        .filter(request -> request.getRequestType() == RequestType.RECALL && request.isNotYetFilled())
+        .collect(Collectors.toList());
+      numberOfNotYetFilledRecalls = openRecalls.size();
+    }
+    if (numberOfNotYetFilledRecalls == 0) {
+      loan.clearDueDateChangedByRecall();
+    }
+    return renewalContext;
   }
 
   private CompletableFuture<Result<RenewalContext>> processFeesFines(RenewalContext renewalContext,
