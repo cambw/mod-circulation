@@ -195,14 +195,15 @@ public abstract class RenewalResource extends Resource {
     Result<RenewalContext> renewalContext) {
     Loan loan = renewalContext.value().getLoan();
     RequestQueue queue = renewalContext.value().getRequestQueue();
-    Integer numberOfNotYetFilledRecalls = 0;
-    if (queue.containsRequestOfType(RequestType.RECALL)) {
-      List<Request> openRecalls = queue.getRequests().stream()
-        .filter(request -> request.getRequestType() == RequestType.RECALL && request.isNotYetFilled())
-        .collect(Collectors.toList());
-      numberOfNotYetFilledRecalls = openRecalls.size();
+    Boolean openRecalls = false;
+    if(queue.size() == 0) {
+      return renewalContext;
     }
-    if (numberOfNotYetFilledRecalls == 0) {
+    if (queue.containsRequestOfType(RequestType.RECALL)) {
+      openRecalls = queue.getRequests().stream()
+        .anyMatch(request -> request.getRequestType() == RequestType.RECALL && request.isNotYetFilled());
+    }
+    if (openRecalls) {
       loan.clearDueDateChangedByRecall();
     }
     return renewalContext;
